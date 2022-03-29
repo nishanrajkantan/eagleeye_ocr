@@ -19,6 +19,7 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
 ### <b>e) Install dependencies</b>
   - conda install cudatoolkit
   - pip install -r 'requirements.txt'
+  - obtain 'test_cimb' from repo owner
 
 ### <b>f) Install Poppler</b>
   - Install poppler from here: https://blog.alivate.com.au/poppler-windows/
