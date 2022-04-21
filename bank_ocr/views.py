@@ -1106,7 +1106,7 @@ class ResultView(TemplateView):
 
         obj = Post.objects.latest('id')
         with open('file-pdf-solid-240.png', 'rb') as destination_file:
-            obj.processed_image.save(image_name, File(destination_file), save=False)
+            obj.processed_image.save('file-pdf-solid-240.png', File(destination_file), save=False)
         obj.save()
             
         obj = Post.objects.latest('id')
