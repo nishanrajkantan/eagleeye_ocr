@@ -1,11 +1,7 @@
-from django.db import models
-from django.shortcuts import redirect, render
 from django.views.generic import ListView, CreateView, TemplateView
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from .forms import PostForm
 from .models import Post
-from django.core.files.base import ContentFile
-from django.core.files import File
 
 
 # Create your views here.
@@ -33,6 +29,10 @@ class ResultView(TemplateView):
         # Script 13. test.py
         # ---------------------------------------------------------------------------------------------------------------------
 
+        print('--------------------------------------------')
+        print('Detecting Image Regions')
+        print('--------------------------------------------')
+
         import pikepdf
         from PyPDF2 import PdfFileReader
         from tqdm import tqdm
@@ -40,33 +40,35 @@ class ResultView(TemplateView):
         import pandas as pd
         import subprocess
         import os
-        from inferenceutils import label_map_util, load_image_into_numpy_array, run_inference_for_single_image
+        from bank_ocr.inferenceutils import label_map_util, load_image_into_numpy_array, run_inference_for_single_image
         import tensorflow as tf
 
-        zipped_model = 'inferenceutils.py'
+        os.chdir('./')
+
+        zipped_model = os.path.join(os.getcwd(), 'bank_ocr\\inferenceutils.py')
         if not os.path.exists(zipped_model):
             subprocess.call(
-                'powershell -Command "Invoke-WebRequest https://raw.githubusercontent.com/hugozanini/object-detection/master/inferenceutils.py -OutFile .\\inferenceutils.py"')
+                'powershell -Command "Invoke-WebRequest https://raw.githubusercontent.com/hugozanini/object-detection/master/inferenceutils.py -OutFile bank_ocr\\inferenceutils.py"')
 
         # ---------------------------------------------------------------------------------------------------------------------
         # CIMB Model
         # ---------------------------------------------------------------------------------------------------------------------
 
-        zipped_model = 'cimb_model\\saved_model'
+        zipped_model = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model')
         if not os.path.exists(zipped_model):
             subprocess.call(
                 "powershell Expand-Archive -Path 'cimb_model\\saved_model.zip' -DestinationPath 'cimb_model\\saved_model\\'")
 
-        labelmap_path = 'cimb_model\\saved_model\\saved_model\\label_map.pbtxt'
+        labelmap_path = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model\\label_map.pbtxt')
 
         category_index = label_map_util.create_category_index_from_labelmap(labelmap_path, use_display_name=True)
         tf.keras.backend.clear_session()
-        model = tf.saved_model.load(f'cimb_model\\saved_model\\saved_model')
+        model = tf.saved_model.load(os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model'))
 
 
-        process_path = '..\\media\\processing_images\\cimb\\'
-        input_path1 = '..\\media\\raw_dataset\\cimb\\'
-        output_path = '..\\media\\predicted_coordinates_cimb.csv'
+        process_path = os.path.join(os.getcwd(), 'media\\processing_images\\cimb\\')
+        input_path1 = os.path.join(os.getcwd(), 'media\\raw_dataset\\cimb\\')
+        output_path = os.path.join(os.getcwd(), 'media\\predicted_coordinates_cimb.csv')
 
         if not os.path.exists(process_path):
             subprocess.call("powershell mkdir " + process_path)
@@ -118,21 +120,21 @@ class ResultView(TemplateView):
         # Maybank Model
         # ---------------------------------------------------------------------------------------------------------------------
 
-        zipped_model = 'maybank_model\\saved_model'
+        zipped_model = os.path.join(os.getcwd(),'bank_ocr\\maybank_model\\saved_model')
         if not os.path.exists(zipped_model):
             subprocess.call(
                 "powershell Expand-Archive -Path 'test\\saved_model.zip' -DestinationPath 'maybank_model\\saved_model\\'")
 
         output_directory = 'inference_graph'
-        labelmap_path = 'maybank_model\\saved_model\\saved_model\\label_map.pbtxt'
+        labelmap_path = os.path.join(os.getcwd(), 'bank_ocr\\maybank_model\\saved_model\\saved_model\\label_map.pbtxt')
 
         category_index = label_map_util.create_category_index_from_labelmap(labelmap_path, use_display_name=True)
         tf.keras.backend.clear_session()
-        model = tf.saved_model.load(f'maybank_model\\saved_model\\saved_model')
+        model = tf.saved_model.load(os.path.join(os.getcwd(),'bank_ocr\\maybank_model\\saved_model\\saved_model'))
 
-        process_path = '..\\media\\processing_images\\mayb\\'
-        input_path1 = '..\\media\\raw_dataset\\mayb\\'
-        output_path = '..\\media\\predicted_coordinates_mayb.csv'
+        process_path = os.path.join(os.getcwd(),'media\\processing_images\\mayb\\')
+        input_path1 = os.path.join(os.getcwd(),'media\\raw_dataset\\mayb\\')
+        output_path = os.path.join(os.getcwd(),'media\\predicted_coordinates_mayb.csv')
 
         if not os.path.exists(process_path):
             subprocess.call("powershell mkdir " + process_path)
@@ -184,6 +186,10 @@ class ResultView(TemplateView):
         # Script 14. pdf_extract_table.py
         # ---------------------------------------------------------------------------------------------------------------------
 
+        print('--------------------------------------------')
+        print('Extracting Transaction Tables')
+        print('--------------------------------------------')
+
         import os
         import re
         import subprocess
@@ -192,14 +198,14 @@ class ResultView(TemplateView):
         import pikepdf
         from tqdm import tqdm
 
-        input_path_cimb = '..\\media\\raw_dataset\\cimb\\'
-        input_path_mayb = '..\\media\\raw_dataset\\mayb\\'
+        input_path_cimb = os.path.join(os.getcwd(),'media\\raw_dataset\\cimb\\')
+        input_path_mayb = os.path.join(os.getcwd(),'media\\raw_dataset\\mayb\\')
 
         cimb_files = sorted(os.listdir(input_path_cimb))
         mayb_files = sorted(os.listdir(input_path_mayb))
 
-        output_path_cimb = '..\\media\\transaction_output\\cimb\\'
-        output_path_mayb = '..\\media\\transaction_output\\mayb\\'
+        output_path_cimb = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
+        output_path_mayb = os.path.join(os.getcwd(),'media\\transaction_output\\mayb\\')
 
         if not os.path.exists(output_path_cimb):
             subprocess.call("powershell mkdir " + output_path_cimb)
@@ -402,14 +408,16 @@ class ResultView(TemplateView):
         # Script 15. extract_metadata.py
         # ---------------------------------------------------------------------------------------------------------------------
 
+        print('--------------------------------------------')
+        print('Extracting Financial Entities')
+        print('--------------------------------------------')
+
         import os
         import subprocess
         import pytesseract
-        import cv2
         import glob
         from PIL import Image
         import pandas as pd
-        import numpy as np
         from tqdm import tqdm
         from pytesseract import Output
 
@@ -417,11 +425,11 @@ class ResultView(TemplateView):
         # Prediction on CIMB transactions
         # --------------------------------------------------------------------------------------------------------------
 
-        coordinates_df = pd.read_csv('..\\media\\predicted_coordinates_cimb.csv')
-        input_path = '..\\media\\processing_images\\cimb\\'
-        process_path = '..\\media\\cropped_images\\cimb\\'
-        output_path = '..\\media\\financial_output\\cimb\\'
-        excel_file_path = '..\\media\\transaction_output\\cimb\\'
+        coordinates_df = pd.read_csv(os.path.join(os.getcwd(),'media\\predicted_coordinates_cimb.csv'))
+        input_path = os.path.join(os.getcwd(),'media\\processing_images\\cimb\\')
+        process_path = os.path.join(os.getcwd(),'media\\cropped_images\\cimb\\')
+        output_path = os.path.join(os.getcwd(),'media\\financial_output\\cimb\\')
+        excel_file_path = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
         excel_files = sorted(os.listdir(excel_file_path))
 
         # --------------------------------------------------------------------------------------------------------------
@@ -490,11 +498,11 @@ class ResultView(TemplateView):
         # Prediction on Maybank transactions
         # --------------------------------------------------------------------------------------------------------------
 
-        coordinates_df2 = pd.read_csv('..\\media\\predicted_coordinates_mayb.csv')
-        input_path2 = '..\\media\\processing_images\\mayb\\'
-        process_path2 = '..\\media\\cropped_images\\mayb\\'
-        output_path2 = '..\\media\\financial_output\\mayb\\'
-        excel_file_path2 = '..\\media\\transaction_output\\mayb\\'
+        coordinates_df2 = pd.read_csv(os.path.join(os.getcwd(),'media\\predicted_coordinates_mayb.csv'))
+        input_path2 = os.path.join(os.getcwd(),'media\\processing_images\\mayb\\')
+        process_path2 = os.path.join(os.getcwd(),'media\\cropped_images\\mayb\\')
+        output_path2 = os.path.join(os.getcwd(),'media\\financial_output\\mayb\\')
+        excel_file_path2 = os.path.join(os.getcwd(),'media\\transaction_output\\mayb\\')
         excel_files2 = sorted(os.listdir(excel_file_path2))
 
         # --------------------------------------------------------------------------------------------------------------
@@ -563,6 +571,10 @@ class ResultView(TemplateView):
         # 16. generate_sender_receiver_column.py
         # --------------------------------------------------------------------------------------------------------------
 
+        print('--------------------------------------------')
+        print('Extracting Entities in Transaction Tables')
+        print('--------------------------------------------')
+
         import pandas as pd
         import os
         import glob
@@ -570,9 +582,9 @@ class ResultView(TemplateView):
         import subprocess
         from tqdm import tqdm
 
-        input_path = '..\\media\\financial_output\\mayb\\'
+        input_path = os.path.join(os.getcwd(),'media\\financial_output\\mayb\\')
         file_list = glob.glob1(input_path, "*.xlsx")
-        output_path = '..\\media\\extract_description\\raw_files\\'
+        output_path = os.path.join(os.getcwd(),'media\\extract_description\\raw_files\\')
 
         if not os.path.exists(output_path):
             subprocess.call("powershell mkdir " + output_path)
@@ -724,6 +736,10 @@ class ResultView(TemplateView):
         # 17. build_eagleyedb.py
         # --------------------------------------------------------------------------------------------------------------
 
+        print('--------------------------------------------')
+        print('Building Eagle Eye DB')
+        print('--------------------------------------------')
+
         import pandas as pd
         import numpy as np
         import glob
@@ -732,9 +748,9 @@ class ResultView(TemplateView):
         from tqdm import tqdm
 
         # file_list = glob.glob1('C:\\Users\\DataMicron\\Desktop\\Bank_Statement_Reader\\extract_description\\raw_files\\', '*.xlsx')
-        input_path = '..\\media\\extract_description\\edited_files\\'
+        input_path = os.path.join(os.getcwd(),'media\\extract_description\\edited_files\\')
         file_list = glob.glob1(input_path, '*.xlsx')
-        output_path = '..\\media\\eagleyedb\\'
+        output_path = os.path.join(os.getcwd(),'media\\eagleyedb\\')
 
         if not os.path.exists(output_path):
             subprocess.call("powershell mkdir " + output_path)
@@ -1100,15 +1116,20 @@ class ResultView(TemplateView):
         # Close the Pandas Excel writer and output the Excel file.
         writer.save()
 
+
+        print('--------------------------------------------')
+        print('DONE! Find your excel output in ' + output_path)
+        print('--------------------------------------------')
+
         # --------------------------------------------------------------------------------------------------------------
         # End of Python scripts
         # --------------------------------------------------------------------------------------------------------------
 
-        obj = Post.objects.latest('id')
-        with open('file-pdf-solid-240.png', 'rb') as destination_file:
-            obj.processed_image.save('file-pdf-solid-240.png', File(destination_file), save=False)
-        obj.save()
-            
-        obj = Post.objects.latest('id')
-        context = {"processed_image": obj.processed_image}
+        # obj = Post.objects.latest('id')
+        # with open('file-pdf-solid-240.png', 'rb') as destination_file:
+        #     obj.processed_image.save('file-pdf-solid-240.png', File(destination_file), save=False)
+        # obj.save()
+        #
+        # obj = Post.objects.latest('id')
+        context = {"processed_image": "processed_image"}
         return context
