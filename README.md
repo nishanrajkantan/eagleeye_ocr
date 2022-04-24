@@ -36,8 +36,20 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
 
 ### <b>j) Put the bank statements dataset in the train/raw_dataset directory</b>
   - Ensure the PDF files are all text based
+
+### <b>k) Download and put cimb and maybank models (from gdrive) in eagleye_ocr/bank_ocr</b>
+
+### <b>l) Run python manage.py makemigrations from eagleeye_ocr folder</b>
+
+### <b>m) Run python manage.py migrate</b>
+
+### <b>n) Run python manage.py runserver to start server</b>
+
+### <b>o) Output folder for eagle eye db is at media/eagleyedb</b>
+
   
-### <b>k) Run the scripts in sequence</b>
+### <b>p) Run the scripts in sequence</b>
+  
   - Before running the scripts, ensure that all paths are correctly defined
     - Run preprocess_images.py
     - Run label_images.py
@@ -54,9 +66,7 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
     - Run pdf_extract_table.py
     - Run extract_metadata.py
 
-### <b>l) Example of prediction output</b>
+
+### <b>q) Example of prediction output</b>
 
 <img src="./references/output_cimb.PNG" width="750" height="375" align="center"/>
-
-
-#### Note: The current table parser only works on Maybank & CIMB banks using rule-based codings
