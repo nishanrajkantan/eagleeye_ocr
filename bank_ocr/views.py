@@ -2,21 +2,43 @@ from django.views.generic import ListView, CreateView, TemplateView
 from django.urls import reverse_lazy
 from .forms import PostForm
 from .models import Post
-
+from django.shortcuts import render, redirect
 
 # Create your views here.
 class HomePageView(ListView):
+    # Post.objects.all().delete()
     model = Post
     template_name = 'home.html'
 
-class CreatePostView(CreateView):
-    model = Post
-    form_class = PostForm
-    template_name = 'post.html'
-    success_url = reverse_lazy('result')
+# class CreatePostView(CreateView):
+#     model = Post
+#     form_class = PostForm
+#     template_name = 'post.html'
+#     success_url = reverse_lazy('home')
 
-    def form_valid(self, form):
-        return super().form_valid(form)
+#     def form_valid(self, form):
+#         obj = form.save(commit=False)
+#         if self.request.FILES:
+#             for f in self.request.FILES.getlist('image'):
+#                 # obj = self.model.objects.create(image=f)
+#                 obj = Post(image=f)
+#                 obj.save()
+
+#         return super(CreatePostView, self).form_valid(form)
+
+def upload_pdf(request):
+    if request.method == "POST":
+        form = PostForm(request.POST, request.FILES)
+        files = request.FILES.getlist('image')
+        if form.is_valid():
+            for f in files:
+                file_instance = Post(image=f)
+                file_instance.save()
+        # # pec.main()
+        return redirect('result')
+    else:
+        form = PostForm()
+    return render(request, 'post.html', {'form': form})
 
 class ResultView(TemplateView):
     template_name = "result.html"
@@ -54,67 +76,67 @@ class ResultView(TemplateView):
         # CIMB Model
         # ---------------------------------------------------------------------------------------------------------------------
 
-        zipped_model = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model')
-        if not os.path.exists(zipped_model):
-            subprocess.call(
-                "powershell Expand-Archive -Path 'cimb_model\\saved_model.zip' -DestinationPath 'cimb_model\\saved_model\\'")
+        # zipped_model = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model')
+        # if not os.path.exists(zipped_model):
+        #     subprocess.call(
+        #         "powershell Expand-Archive -Path 'cimb_model\\saved_model.zip' -DestinationPath 'cimb_model\\saved_model\\'")
 
-        labelmap_path = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model\\label_map.pbtxt')
+        # labelmap_path = os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model\\label_map.pbtxt')
 
-        category_index = label_map_util.create_category_index_from_labelmap(labelmap_path, use_display_name=True)
-        tf.keras.backend.clear_session()
-        model = tf.saved_model.load(os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model'))
+        # category_index = label_map_util.create_category_index_from_labelmap(labelmap_path, use_display_name=True)
+        # tf.keras.backend.clear_session()
+        # model = tf.saved_model.load(os.path.join(os.getcwd(), 'bank_ocr\\cimb_model\\saved_model\\saved_model'))
 
 
-        process_path = os.path.join(os.getcwd(), 'media\\processing_images\\cimb\\')
-        input_path1 = os.path.join(os.getcwd(), 'media\\raw_dataset\\cimb\\')
-        output_path = os.path.join(os.getcwd(), 'media\\predicted_coordinates_cimb.csv')
+        # process_path = os.path.join(os.getcwd(), 'media\\processing_images\\cimb\\')
+        # input_path1 = os.path.join(os.getcwd(), 'media\\raw_dataset\\cimb\\')
+        # output_path = os.path.join(os.getcwd(), 'media\\predicted_coordinates_cimb.csv')
 
-        if not os.path.exists(process_path):
-            subprocess.call("powershell mkdir " + process_path)
+        # if not os.path.exists(process_path):
+        #     subprocess.call("powershell mkdir " + process_path)
 
-        for i, pdf in tqdm(enumerate(os.listdir(input_path1))):
-            file = pikepdf.open(input_path1 + pdf, allow_overwriting_input=True)
-            file.save(input_path1 + pdf)
+        # for i, pdf in tqdm(enumerate(os.listdir(input_path1))):
+        #     file = pikepdf.open(input_path1 + pdf, allow_overwriting_input=True)
+        #     file.save(input_path1 + pdf)
 
-        for i, pdf in tqdm(enumerate(os.listdir(input_path1))):
-            input = PdfFileReader(open(input_path1 + pdf, 'rb'))
-            width = input.getPage(0).mediaBox[2]
-            height = input.getPage(0).mediaBox[3]
-            images = convert_from_path(input_path1 + pdf, size=(width, height))
-            for i, image in enumerate(images):
-                image.save(process_path + pdf[:-4] + '_page_' + str(i) + '.jpg', 'JPEG')
+        # for i, pdf in tqdm(enumerate(os.listdir(input_path1))):
+        #     input = PdfFileReader(open(input_path1 + pdf, 'rb'))
+        #     width = input.getPage(0).mediaBox[2]
+        #     height = input.getPage(0).mediaBox[3]
+        #     images = convert_from_path(input_path1 + pdf, size=(width, height))
+        #     for i, image in enumerate(images):
+        #         image.save(process_path + pdf[:-4] + '_page_' + str(i) + '.jpg', 'JPEG')
 
-        # Getting images to test
-        images = os.listdir(process_path)
+        # # Getting images to test
+        # images = os.listdir(process_path)
 
-        # for multiple images, use this code
-        rows = []
-        for image_name in images:
+        # # for multiple images, use this code
+        # rows = []
+        # for image_name in images:
 
-            image_np = load_image_into_numpy_array(process_path + image_name)
-            output_dict = run_inference_for_single_image(model, image_np)
+        #     image_np = load_image_into_numpy_array(process_path + image_name)
+        #     output_dict = run_inference_for_single_image(model, image_np)
 
-            # store boxes in dataframe!
-            cut_off_scores = len(list(filter(lambda x: x >= 0.1, output_dict['detection_scores'])))
+        #     # store boxes in dataframe!
+        #     cut_off_scores = len(list(filter(lambda x: x >= 0.1, output_dict['detection_scores'])))
 
-            for j in range(cut_off_scores):
-                name = image_name
-                scores = output_dict['detection_scores'][j]
-                classes = output_dict['detection_classes'][j]
-                for i in range(1, len(category_index) + 1):
-                    if output_dict['detection_classes'][j] == category_index[i]['id']:
-                        classes = category_index[i]['name']
-                ymin = output_dict['detection_boxes'][j][0]
-                xmin = output_dict['detection_boxes'][j][1]
-                ymax = output_dict['detection_boxes'][j][2]
-                xmax = output_dict['detection_boxes'][j][3]
+        #     for j in range(cut_off_scores):
+        #         name = image_name
+        #         scores = output_dict['detection_scores'][j]
+        #         classes = output_dict['detection_classes'][j]
+        #         for i in range(1, len(category_index) + 1):
+        #             if output_dict['detection_classes'][j] == category_index[i]['id']:
+        #                 classes = category_index[i]['name']
+        #         ymin = output_dict['detection_boxes'][j][0]
+        #         xmin = output_dict['detection_boxes'][j][1]
+        #         ymax = output_dict['detection_boxes'][j][2]
+        #         xmax = output_dict['detection_boxes'][j][3]
 
-                row = list([name, scores, classes, ymin, xmin, ymax, xmax])
-                rows.append(row)
+        #         row = list([name, scores, classes, ymin, xmin, ymax, xmax])
+        #         rows.append(row)
 
-        final_df = pd.DataFrame(rows, columns=['Image', 'Scores', 'Classes', 'ymin', 'xmin', 'ymax', 'xmax'])
-        final_df.to_csv(output_path, index=False)
+        # final_df = pd.DataFrame(rows, columns=['Image', 'Scores', 'Classes', 'ymin', 'xmin', 'ymax', 'xmax'])
+        # final_df.to_csv(output_path, index=False)
 
         # ---------------------------------------------------------------------------------------------------------------------
         # Maybank Model
@@ -133,7 +155,7 @@ class ResultView(TemplateView):
         model = tf.saved_model.load(os.path.join(os.getcwd(),'bank_ocr\\maybank_model\\saved_model\\saved_model'))
 
         process_path = os.path.join(os.getcwd(),'media\\processing_images\\mayb\\')
-        input_path1 = os.path.join(os.getcwd(),'media\\raw_dataset\\mayb\\')
+        input_path1 = os.path.join(os.getcwd(),'media\\images\\')
         output_path = os.path.join(os.getcwd(),'media\\predicted_coordinates_mayb.csv')
 
         if not os.path.exists(process_path):
@@ -198,112 +220,112 @@ class ResultView(TemplateView):
         import pikepdf
         from tqdm import tqdm
 
-        input_path_cimb = os.path.join(os.getcwd(),'media\\raw_dataset\\cimb\\')
-        input_path_mayb = os.path.join(os.getcwd(),'media\\raw_dataset\\mayb\\')
+        # input_path_cimb = os.path.join(os.getcwd(),'media\\raw_dataset\\cimb\\')
+        input_path_mayb = os.path.join(os.getcwd(),'media\\images\\')
 
-        cimb_files = sorted(os.listdir(input_path_cimb))
+        # cimb_files = sorted(os.listdir(input_path_cimb))
         mayb_files = sorted(os.listdir(input_path_mayb))
 
-        output_path_cimb = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
+        # output_path_cimb = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
         output_path_mayb = os.path.join(os.getcwd(),'media\\transaction_output\\mayb\\')
 
-        if not os.path.exists(output_path_cimb):
-            subprocess.call("powershell mkdir " + output_path_cimb)
+        # if not os.path.exists(output_path_cimb):
+        #     subprocess.call("powershell mkdir " + output_path_cimb)
 
         if not os.path.exists(output_path_mayb):
             subprocess.call("powershell mkdir " + output_path_mayb)
 
-        for i, pdf in tqdm(enumerate(cimb_files)):
-            file = pikepdf.open(input_path_cimb + pdf, allow_overwriting_input=True)
-            file.save(input_path_cimb + pdf)
+        # for i, pdf in tqdm(enumerate(cimb_files)):
+        #     file = pikepdf.open(input_path_cimb + pdf, allow_overwriting_input=True)
+        #     file.save(input_path_cimb + pdf)
 
         for i, pdf in tqdm(enumerate(mayb_files)):
             file = pikepdf.open(input_path_mayb + pdf, allow_overwriting_input=True)
             file.save(input_path_mayb + pdf)
 
-        for i, pdf in tqdm(enumerate(cimb_files)):
-            table = camelot.read_pdf(input_path_cimb + pdf, pages='all', flavor='lattice')
-            tables = pd.DataFrame()
-            with pd.ExcelWriter(output_path_cimb + 'transaction_' + pdf[:-4] + '.xlsx', engine='xlsxwriter') as writer:
-                tables = pd.DataFrame()
-                for x in range(len(table)):
-                    if x == 0:
-                        tables = tables.append(table[0].df)
-                    elif table[0].df[0][0] == table[x].df[0][0]:
-                        tables = tables.append(table[x].df.iloc[1:])
-                tables = tables.reset_index().drop(columns=['index'], axis=1)
+        # for i, pdf in tqdm(enumerate(cimb_files)):
+        #     table = camelot.read_pdf(input_path_cimb + pdf, pages='all', flavor='lattice')
+        #     tables = pd.DataFrame()
+        #     with pd.ExcelWriter(output_path_cimb + 'transaction_' + pdf[:-4] + '.xlsx', engine='xlsxwriter') as writer:
+        #         tables = pd.DataFrame()
+        #         for x in range(len(table)):
+        #             if x == 0:
+        #                 tables = tables.append(table[0].df)
+        #             elif table[0].df[0][0] == table[x].df[0][0]:
+        #                 tables = tables.append(table[x].df.iloc[1:])
+        #         tables = tables.reset_index().drop(columns=['index'], axis=1)
 
-                columns = tables[0][0].split("\n")
-                columns = columns[:7]
+        #         columns = tables[0][0].split("\n")
+        #         columns = columns[:7]
 
-                dates = []
-                descriptions = []
-                refs = []
-                withdraws = []
-                deposits = []
-                taxes = []
-                balances = []
-                for i in range(2, len(tables)):
+        #         dates = []
+        #         descriptions = []
+        #         refs = []
+        #         withdraws = []
+        #         deposits = []
+        #         taxes = []
+        #         balances = []
+        #         for i in range(2, len(tables)):
 
-                    # Get date & description
-                    # ----------------------------------------
-                    date = tables[0][i][:10]
-                    description = tables[0][i][12:]
-                    add_description = tables[1][i]
-                    ref = tables[2][i]
-                    # ----------------------------------------
+        #             # Get date & description
+        #             # ----------------------------------------
+        #             date = tables[0][i][:10]
+        #             description = tables[0][i][12:]
+        #             add_description = tables[1][i]
+        #             ref = tables[2][i]
+        #             # ----------------------------------------
 
-                    # Get withdrawal (debit)
-                    # ----------------------------------------
-                    withdraw = re.sub(',', '', tables[3][i])
-                    if withdraw == '':
-                        withdraw = 0
-                    else:
-                        withdraw = float(withdraw)
-                    # ----------------------------------------
+        #             # Get withdrawal (debit)
+        #             # ----------------------------------------
+        #             withdraw = re.sub(',', '', tables[3][i])
+        #             if withdraw == '':
+        #                 withdraw = 0
+        #             else:
+        #                 withdraw = float(withdraw)
+        #             # ----------------------------------------
 
-                    # Get deposit (credit)
-                    # ----------------------------------------
-                    deposit = re.sub(',', '', tables[4][i])
-                    if deposit == '':
-                        deposit = 0
-                    else:
-                        deposit = float(deposit)
-                    # ----------------------------------------
+        #             # Get deposit (credit)
+        #             # ----------------------------------------
+        #             deposit = re.sub(',', '', tables[4][i])
+        #             if deposit == '':
+        #                 deposit = 0
+        #             else:
+        #                 deposit = float(deposit)
+        #             # ----------------------------------------
 
-                    # Get tax
-                    # ----------------------------------------
-                    tax = re.sub(',', '', tables[5][i])
-                    if tax == '':
-                        tax = 0
-                    else:
-                        tax = float(tax)
-                    # ----------------------------------------
+        #             # Get tax
+        #             # ----------------------------------------
+        #             tax = re.sub(',', '', tables[5][i])
+        #             if tax == '':
+        #                 tax = 0
+        #             else:
+        #                 tax = float(tax)
+        #             # ----------------------------------------
 
-                    # Get account balance
-                    # ----------------------------------------
-                    balance = re.sub(',', '', tables[6][i])
-                    if balance == '':
-                        balance = 0
-                    else:
-                        balance = float(balance)
-                    # ----------------------------------------
+        #             # Get account balance
+        #             # ----------------------------------------
+        #             balance = re.sub(',', '', tables[6][i])
+        #             if balance == '':
+        #                 balance = 0
+        #             else:
+        #                 balance = float(balance)
+        #             # ----------------------------------------
 
-                    # Append all lists
-                    # ----------------------------------------
-                    dates.append(date)
-                    descriptions.append(description + '\n' + add_description)
-                    refs.append(ref)
-                    withdraws.append(withdraw)
-                    deposits.append(deposit)
-                    taxes.append(tax)
-                    balances.append(balance)
-                    # ----------------------------------------
+        #             # Append all lists
+        #             # ----------------------------------------
+        #             dates.append(date)
+        #             descriptions.append(description + '\n' + add_description)
+        #             refs.append(ref)
+        #             withdraws.append(withdraw)
+        #             deposits.append(deposit)
+        #             taxes.append(tax)
+        #             balances.append(balance)
+        #             # ----------------------------------------
 
-                transactions_df = pd.DataFrame(
-                    list([dates, descriptions, refs, withdraws, deposits, taxes, balances])).T
-                transactions_df.columns = columns
-                transactions_df.to_excel(writer, sheet_name='transactions', index=False)
+        #         transactions_df = pd.DataFrame(
+        #             list([dates, descriptions, refs, withdraws, deposits, taxes, balances])).T
+        #         transactions_df.columns = columns
+        #         transactions_df.to_excel(writer, sheet_name='transactions', index=False)
 
         for i, pdf in tqdm(enumerate(mayb_files)):
 
@@ -425,74 +447,74 @@ class ResultView(TemplateView):
         # Prediction on CIMB transactions
         # --------------------------------------------------------------------------------------------------------------
 
-        coordinates_df = pd.read_csv(os.path.join(os.getcwd(),'media\\predicted_coordinates_cimb.csv'))
-        input_path = os.path.join(os.getcwd(),'media\\processing_images\\cimb\\')
-        process_path = os.path.join(os.getcwd(),'media\\cropped_images\\cimb\\')
-        output_path = os.path.join(os.getcwd(),'media\\financial_output\\cimb\\')
-        excel_file_path = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
-        excel_files = sorted(os.listdir(excel_file_path))
+        # coordinates_df = pd.read_csv(os.path.join(os.getcwd(),'media\\predicted_coordinates_cimb.csv'))
+        # input_path = os.path.join(os.getcwd(),'media\\processing_images\\cimb\\')
+        # process_path = os.path.join(os.getcwd(),'media\\cropped_images\\cimb\\')
+        # output_path = os.path.join(os.getcwd(),'media\\financial_output\\cimb\\')
+        # excel_file_path = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
+        # excel_files = sorted(os.listdir(excel_file_path))
 
         # --------------------------------------------------------------------------------------------------------------
 
-        if not os.path.exists(process_path):
-            subprocess.call("powershell mkdir " + process_path)
+        # if not os.path.exists(process_path):
+        #     subprocess.call("powershell mkdir " + process_path)
 
-        if not os.path.exists(output_path):
-            subprocess.call("powershell mkdir " + output_path)
+        # if not os.path.exists(output_path):
+        #     subprocess.call("powershell mkdir " + output_path)
 
-        images = glob.glob1(input_path, "*.jpg")
-        tessdata_dir_config = r'-l "eng+msa" --tessdata-dir "C:\Program Files\Tesseract-OCR\tessdata" --psm 6'
-        pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-
-        # --------------------------------------------------------------------------------------------------------------
-
-        rows = []
-        for i in tqdm(range(len(coordinates_df))):
-            for j in range(len(images)):
-                if coordinates_df['Image'][i] == images[j]:
-                    image = Image.open(input_path + images[j])
-                    results = pytesseract.image_to_data(image, config=tessdata_dir_config, output_type=Output.DICT)
-
-                    # (This is not mandatory)
-                    width, height = image.size
-
-                    # Setting the points for cropped image
-                    left = coordinates_df['xmin'][i] * width
-                    top = coordinates_df['ymin'][i] * height
-                    right = coordinates_df['xmax'][i] * width
-                    bottom = coordinates_df['ymax'][i] * height
-
-                    # Cropped image of above dimension
-                    # (It will not change orginal image)
-                    im1 = image.crop((left, top, right, bottom))
-                    im1 = im1.resize((im1.size[0] * 5, im1.size[1] * 5), resample=5)
-
-                    # # Shows the image in image viewer
-                    # im1.show()
-                    im1.save(process_path + images[j])
-                    text = pytesseract.image_to_string(im1, lang='eng+msa', config=tessdata_dir_config)
-
-                    row = list([images[j], coordinates_df['Classes'][i], text])
-                    rows.append(row)
-
-        raw_info = pd.DataFrame(rows, columns=['Image', 'Key', 'Value'])
+        # images = glob.glob1(input_path, "*.jpg")
+        # tessdata_dir_config = r'-l "eng+msa" --tessdata-dir "C:\Program Files\Tesseract-OCR\tessdata" --psm 6'
+        # pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
         # --------------------------------------------------------------------------------------------------------------
 
-        for i, excel in tqdm(enumerate(excel_files)):
-            output_df = pd.read_excel(excel_file_path + excel)
-            statement_name1 = excel[12:-5]
-            with pd.ExcelWriter(output_path + 'output_' + excel[12:-5] + '.xlsx', engine='xlsxwriter') as writer:
-                rows = []
-                for j in range(len(raw_info)):
-                    statement_name2 = raw_info['Image'][j][:15]
-                    if (statement_name1 == statement_name2) and (raw_info['Key'][j] != 'transactions'):
-                        row = list(raw_info.iloc[j][1:])
-                        rows.append(row)
-                        df = pd.DataFrame(rows, columns=['Key', 'Value'])
-                        df = df.drop_duplicates()
-                output_df.to_excel(writer, sheet_name='transactions', index=False)
-                df.to_excel(writer, sheet_name='metadata', index=False)
+        # rows = []
+        # for i in tqdm(range(len(coordinates_df))):
+        #     for j in range(len(images)):
+        #         if coordinates_df['Image'][i] == images[j]:
+        #             image = Image.open(input_path + images[j])
+        #             results = pytesseract.image_to_data(image, config=tessdata_dir_config, output_type=Output.DICT)
+
+        #             # (This is not mandatory)
+        #             width, height = image.size
+
+        #             # Setting the points for cropped image
+        #             left = coordinates_df['xmin'][i] * width
+        #             top = coordinates_df['ymin'][i] * height
+        #             right = coordinates_df['xmax'][i] * width
+        #             bottom = coordinates_df['ymax'][i] * height
+
+        #             # Cropped image of above dimension
+        #             # (It will not change orginal image)
+        #             im1 = image.crop((left, top, right, bottom))
+        #             im1 = im1.resize((im1.size[0] * 5, im1.size[1] * 5), resample=5)
+
+        #             # # Shows the image in image viewer
+        #             # im1.show()
+        #             im1.save(process_path + images[j])
+        #             text = pytesseract.image_to_string(im1, lang='eng+msa', config=tessdata_dir_config)
+
+        #             row = list([images[j], coordinates_df['Classes'][i], text])
+        #             rows.append(row)
+
+        # raw_info = pd.DataFrame(rows, columns=['Image', 'Key', 'Value'])
+
+        # # --------------------------------------------------------------------------------------------------------------
+
+        # for i, excel in tqdm(enumerate(excel_files)):
+        #     output_df = pd.read_excel(excel_file_path + excel)
+        #     statement_name1 = excel[12:-5]
+        #     with pd.ExcelWriter(output_path + 'output_' + excel[12:-5] + '.xlsx', engine='xlsxwriter') as writer:
+        #         rows = []
+        #         for j in range(len(raw_info)):
+        #             statement_name2 = raw_info['Image'][j][:15]
+        #             if (statement_name1 == statement_name2) and (raw_info['Key'][j] != 'transactions'):
+        #                 row = list(raw_info.iloc[j][1:])
+        #                 rows.append(row)
+        #                 df = pd.DataFrame(rows, columns=['Key', 'Value'])
+        #                 df = df.drop_duplicates()
+        #         output_df.to_excel(writer, sheet_name='transactions', index=False)
+        #         df.to_excel(writer, sheet_name='metadata', index=False)
 
         # --------------------------------------------------------------------------------------------------------------
         # Prediction on Maybank transactions

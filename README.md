@@ -26,7 +26,7 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
   - Add bin location to PATH
 
 ### <b>g) Copy protos from tensorflow directory to anaconda environment </b>
-  - Copy all files from '..\models\research\object_detection\protos' to '..\anaconda3\envs\Bank_Statement_Digitization\Lib\site-packages\object_detection\protos'
+  - Copy all files from '..\models\research\object_detection\protos' to '..\anaconda3\envs\<env_name>\Lib\site-packages\object_detection\protos'
 
 ### <b>h) Change object detection path in requirements.txt </b>
   - At line 67, change 'object-detection @ file:///../Bank_Statement_Digitization/train/models/research' accordingly
@@ -37,18 +37,20 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
 ### <b>j) Put the bank statements dataset in the train/raw_dataset directory</b>
   - Ensure the PDF files are all text based
 
-### <b>k) Download and put cimb and maybank models (from gdrive) in eagleye_ocr/bank_ocr</b>
+### <b>k) Download(https://drive.google.com/drive/folders/1eIoO2t0J5YVVkJJhK9Srbktz9N8kW_5A?usp=sharing) Maybank model (from gdrive) and put in eagleye_ocr/bank_ocr</b>
 
-### <b>l) Run python manage.py makemigrations from eagleeye_ocr folder</b>
+### <b>l) Download(https://drive.google.com/drive/folders/1xNLgTlmYXtCoQ6bMPjAEm9lyLBo6WuQR?usp=sharing) Tesseract-OCR (from gdrive) and put in C:/Program Files/</b>
 
-### <b>m) Run python manage.py migrate</b>
+### <b>m) Run python manage.py makemigrations from eagleeye_ocr folder</b>
 
-### <b>n) Run python manage.py runserver to start server</b>
+### <b>n) Run python manage.py migrate</b>
 
-### <b>o) Output folder for eagle eye db is at media/eagleyedb</b>
+### <b>o) Run python manage.py runserver to start server</b>
+
+### <b>p) Output folder for eagle eye db is at media/eagleyedb</b>
 
   
-### <b>p) Run the scripts in sequence</b>
+### <b>q) Run the scripts in sequence</b>(Dont Need for Setting up)
   
   - Before running the scripts, ensure that all paths are correctly defined
     - Run preprocess_images.py
@@ -67,6 +69,6 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
     - Run extract_metadata.py
 
 
-### <b>q) Example of prediction output</b>
+### <b>r) Example of prediction output</b>
 
 <img src="./references/output_cimb.PNG" width="750" height="375" align="center"/>
