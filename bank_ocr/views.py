@@ -40,6 +40,17 @@ def upload_pdf(request):
         form = PostForm()
     return render(request, 'post.html', {'form': form})
 
+class TrainingView(TemplateView):
+    template_name = "training.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        obj = Post.objects.latest('id')
+
+
+        context = {"processed_image": "processed_image"}
+        return context
+
 class ResultView(TemplateView):
     template_name = "result.html"
 
