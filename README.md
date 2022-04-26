@@ -49,7 +49,6 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
 
 ### <b>p) Output folder for eagle eye db is at media/eagleyedb</b>
 
-  
 ### <b>q) Run the scripts in sequence</b>(Dont Need for Setting up)
   
   - Before running the scripts, ensure that all paths are correctly defined
