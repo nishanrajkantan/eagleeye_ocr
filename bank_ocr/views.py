@@ -47,6 +47,625 @@ class TrainingView(TemplateView):
         context = super().get_context_data(**kwargs)
         obj = Post.objects.latest('id')
 
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 1. preprocess_PDFs.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Pre-processing PDF(s)')
+        print('--------------------------------------------')
+
+        import os
+        from tqdm import tqdm
+        from PIL import Image
+        from pdf2image import convert_from_path
+
+        # ---------------------------------------------------------------------------
+
+        os.chdir('./')
+        input_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\raw_dataset\\')
+        output_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\jpg_dataset\\')
+
+        # ---------------------------------------------------------------------------
+
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+
+        # ---------------------------------------------------------------------------
+
+        for i, image_path in tqdm(enumerate(sorted(os.listdir(input_path)))):
+            if image_path.endswith(".png"):
+                image = Image.open(input_path + image_path).convert('RGB')
+                image = image.resize((600, 600))
+                image.save(output_path + 'jpg_image_' + str(i).zfill(3) + '.jpg')
+            elif image_path.endswith(".jpeg"):
+                image = Image.open(input_path + image_path).convert('RGB')
+                image = image.resize((600, 600))
+                image.save(output_path + 'jpg_image_' + str(i).zfill(3) + '.jpg')
+            elif image_path.endswith(".jpg"):
+                image = Image.open(input_path + image_path).convert('RGB')
+                image = image.resize((600, 600))
+                image.save(output_path + 'jpg_image_' + str(i).zfill(3) + '.jpg')
+            elif image_path.endswith(".tif"):
+                image = Image.open(input_path + image_path).convert('RGB')
+                image = image.resize((600, 600))
+                image.save(output_path + 'jpg_image_' + str(i).zfill(3) + '.jpg')
+            elif image_path.endswith(".pdf"):
+                images = convert_from_path(input_path + image_path, size=(600, 600))
+                for i, image in enumerate(images):
+                    image.save(output_path + image_path[:-4] + '_page_' + str(i) + '.jpg', 'JPEG')
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 2. label_images.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Labelling Image ROI')
+        print('--------------------------------------------')
+
+        import subprocess
+
+        # ---------------------------------------------------------------------------
+
+        input_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\jpg_dataset\\')
+        subprocess.call("labelimg " + input_path)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 3. augment_images.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Augmenting Images')
+        print('--------------------------------------------')
+
+        import os
+        import lxml.etree
+        import glob
+        from tqdm import tqdm
+        from PIL import Image, ImageEnhance
+
+        # ---------------------------------------------------------------------------
+
+        input_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\jpg_dataset\\')
+        output_path1 = os.path.join(os.getcwd(), 'media\\train\\dataset\\augmented_dataset\\')
+        output_path2 = os.path.join(os.getcwd(), 'media\\train\\dataset\\images\\')
+
+        # ---------------------------------------------------------------------------
+
+        if not os.path.exists(output_path1):
+            os.mkdir(output_path1)
+
+        # ---------------------------------------------------------------------------
+
+        xml_list = glob.glob1(input_path, "*.xml")
+
+        k = 0
+
+        for i in tqdm(range(len(xml_list))):
+            img = Image.open(input_path + xml_list[i][:-4] + '.jpg')
+            width, height = img.size
+            img.save(output_path1 + 'image_' + str(i).zfill(3) + ".jpg", 'JPEG')
+            tree = lxml.etree.parse(input_path + xml_list[i])
+            root = tree.getroot()
+            for member in root.findall('object'):
+                root.find('filename').text = 'image_' + str(i).zfill(3) + ".jpg"
+            tree.write(output_path1 + 'image_' + str(i).zfill(3) + ".xml")
+            l = 0.3
+
+            # augment by image brightness
+            for j in range(2):
+                factor = 0.5 + l
+                enhancer = ImageEnhance.Brightness(img)
+                im_output = enhancer.enhance(factor)
+                im_output.save(output_path1 + 'image_' + str(i).zfill(3) + '_brightness_' + str(k).zfill(3) + ".jpg",
+                               'JPEG')
+                for member in root.findall('object'):
+                    root.find('filename').text = 'image_' + str(i).zfill(3) + '_brightness_' + str(k).zfill(3) + ".jpg"
+                tree.write(output_path1 + 'image_' + str(i).zfill(3) + '_brightness_' + str(k).zfill(3) + ".xml")
+                k += 1
+                l += 0.3
+
+            # augment by image contrast
+            l = 0.3
+            for j in range(2):
+                factor = 0.5 + l
+                enhancer = ImageEnhance.Contrast(img)
+                im_output = enhancer.enhance(factor)
+                im_output.save(output_path1 + 'image_' + str(i).zfill(3) + '_contrast_' + str(k).zfill(3) + ".jpg",
+                               'JPEG')
+                for member in root.findall('object'):
+                    root.find('filename').text = 'image_' + str(i).zfill(3) + '_contrast_' + str(k).zfill(3) + ".jpg"
+                tree.write(output_path1 + 'image_' + str(i).zfill(3) + '_contrast_' + str(k).zfill(3) + ".xml")
+                k += 1
+                l += 0.3
+
+            # augment by image sharpness
+            l = 0
+            for j in range(2):
+                factor = 0.05 + l
+                enhancer = ImageEnhance.Sharpness(img)
+                im_output = enhancer.enhance(factor)
+                im_output.save(output_path1 + 'image_' + str(i).zfill(3) + '_sharpness_' + str(k).zfill(3) + ".jpg",
+                               'JPEG')
+                for member in root.findall('object'):
+                    root.find('filename').text = 'image_' + str(i).zfill(3) + '_sharpness_' + str(k).zfill(3) + ".jpg"
+                tree.write(output_path1 + 'image_' + str(i).zfill(3) + '_sharpness_' + str(k).zfill(3) + ".xml")
+                k += 1
+                l += 0.5
+
+            # augment by image colour
+            l = 0
+            for j in range(2):
+                factor = 0.05 + l
+                enhancer = ImageEnhance.Color(img)
+                im_output = enhancer.enhance(factor)
+                im_output.save(output_path1 + 'image_' + str(i).zfill(3) + '_color_' + str(k).zfill(3) + ".jpg", 'JPEG')
+                for member in root.findall('object'):
+                    root.find('filename').text = 'image_' + str(i).zfill(3) + '_color_' + str(k).zfill(3) + ".jpg"
+                tree.write(output_path1 + 'image_' + str(i).zfill(3) + '_color_' + str(k).zfill(3) + ".xml")
+                k += 1
+                l += 0.5
+
+        total_image = sorted(glob.glob1(output_path1, "*.jpg"))
+        total_xml = sorted(glob.glob1(output_path1, "*.xml"))
+        print("\nThere are " + str(len(total_image)) + " images after augmentation")
+
+        # ---------------------------------------------------------------------------
+
+        if not os.path.exists(output_path2):
+            os.mkdir(output_path2)
+
+        # ---------------------------------------------------------------------------
+
+        for i in tqdm(range(len(total_image))):
+            img = Image.open(output_path1 + total_image[i][:-4] + '.jpg')
+            img.save(output_path2 + total_image[i], 'JPEG')
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 4. create_csv_file.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Combining XML files')
+        print('--------------------------------------------')
+
+        def xml_to_csv(input_path, output_path):
+
+            import glob
+            import pandas as pd
+            import xml.etree.ElementTree as ET
+
+            xml_list = []
+            for xml_file in glob.glob(input_path + '*.xml'):
+                tree = ET.parse(xml_file)
+                root = tree.getroot()
+                for member in root.findall('object'):
+                    value = (root.find('filename').text,
+                             int(root.find('size')[0].text),
+                             int(root.find('size')[1].text),
+                             member[0].text,
+                             int(member[4][0].text),
+                             int(member[4][1].text),
+                             int(member[4][2].text),
+                             int(member[4][3].text)
+                             )
+                    xml_list.append(value)
+            column_name = ['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']
+            xml_df = pd.DataFrame(xml_list, columns=column_name)
+            xml_df.to_csv(output_path + 'labels.csv', index=None)
+            return xml_df
+
+        input_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\augmented_dataset\\')
+        output_path = os.path.join(os.getcwd(), 'media\\train\\dataset\\')
+        xml_to_csv(input_path, output_path)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 5. split_dataset.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Splitting Dataset')
+        print('--------------------------------------------')
+
+        import os
+        import numpy as np
+        import shutil
+        import glob
+
+        # # Creating Train / Val / Test folders (One time use)
+        dataset_dir = os.path.join(os.getcwd(), 'media\\train\\dataset\\')
+        image_dir = 'images/'
+
+        val_ratio = 0.15
+        test_ratio = 0.05
+
+        # Creating directories for train, val, & test
+        myFileList = glob.glob1(dataset_dir + image_dir, "*.jpg")
+        print("\nThere are", len(myFileList), "images read by Python")
+        np.random.shuffle(myFileList)
+
+        if not os.path.exists(dataset_dir + image_dir + 'train'):
+            os.makedirs(dataset_dir + image_dir + 'train')
+
+        if not os.path.exists(dataset_dir + image_dir + 'val'):
+            os.makedirs(dataset_dir + image_dir + 'val')
+
+        if not os.path.exists(dataset_dir + image_dir + 'test'):
+            os.makedirs(dataset_dir + image_dir + 'test')
+
+        # Creating partitions of the data after shuffeling
+        np.random.shuffle(myFileList)
+        train_FileNames, val_FileNames, test_FileNames = np.split(np.array(myFileList),
+                                                                  [int(len(myFileList) * (1 - val_ratio + test_ratio)),
+                                                                   int(len(myFileList) * (1 - test_ratio))])
+        train_FileNames = [dataset_dir + image_dir + name for name in train_FileNames.tolist()]
+        val_FileNames = [dataset_dir + image_dir + name for name in val_FileNames.tolist()]
+        test_FileNames = [dataset_dir + image_dir + name for name in test_FileNames.tolist()]
+        print('Total images: ', len(myFileList))
+        print('Training: ', len(train_FileNames))
+        print('Validation: ', len(val_FileNames))
+        print('Testing: ', len(test_FileNames))
+
+        # Copy-pasting images
+        for name in train_FileNames:
+            shutil.copy(name, dataset_dir + image_dir + '/train')
+        for name in val_FileNames:
+            shutil.copy(name, dataset_dir + image_dir + '/val')
+        for name in test_FileNames:
+            shutil.copy(name, dataset_dir + image_dir + '/test')
+
+        # Remove images not in their specific directories
+        for file in os.listdir(dataset_dir + image_dir):
+            if file.endswith('.jpg'):
+                os.remove(dataset_dir + image_dir + file)
+
+        # Generate csv files for train, val, & test
+        import pandas as pd
+
+        labels_df = pd.read_csv(dataset_dir + 'labels.csv')
+        train_images_path = os.listdir(dataset_dir + image_dir + '/train')
+        val_images_path = os.listdir(dataset_dir + image_dir + '/val')
+        test_images_path = os.listdir(dataset_dir + image_dir + '/test')
+
+        # Split invoice_labels_train.csv into train_labels, val_labels, & test_labels
+        from tqdm import tqdm
+
+        train_list = []
+        val_list = []
+        test_list = []
+
+        for i in tqdm(range(len(labels_df))):
+            for j in range(len(train_images_path)):
+                if labels_df['filename'][i] == train_images_path[j]:
+                    train_list.append(labels_df.iloc[i][:])
+            for j in range(len(val_images_path)):
+                if labels_df['filename'][i] == val_images_path[j]:
+                    val_list.append(labels_df.iloc[i][:])
+            for j in range(len(test_images_path)):
+                if labels_df['filename'][i] == test_images_path[j]:
+                    test_list.append(labels_df.iloc[i][:])
+
+        # Convert lists to dataframes
+        train_df = pd.DataFrame(train_list)
+        val_df = pd.DataFrame(val_list)
+        test_df = pd.DataFrame(test_list)
+
+        # Save dataframes as csv files
+        train_df.to_csv(dataset_dir + 'train_labels.csv', index=False)
+        val_df.to_csv(dataset_dir + 'val_labels.csv', index=False)
+        test_df.to_csv(dataset_dir + 'test_labels.csv', index=False)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 6. create_tf_records.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Preparing input for model training')
+        print('--------------------------------------------')
+
+        import subprocess
+        from tqdm import tqdm
+        import pandas as pd
+
+        df = pd.read_csv(os.path.join(os.getcwd(), 'media\\train\\dataset\\labels.csv'))
+        entity_names = df['class'].unique().tolist()
+
+        with open(os.path.join(os.getcwd(), 'media\\train\\label_map.pbtxt'), 'w') as file:
+            for i in tqdm(range(len(entity_names))):
+                file.write('item {name: "' + entity_names[i] + '" id: ' + str(i + 1) + '}\n')
+
+        tf_generate_record_script = os.path.join(os.getcwd(), 'media\\train\\dataset\\generate_tf_records.py')
+        if not os.path.exists(tf_generate_record_script):
+            subprocess.call(
+                'powershell -Command "Invoke-WebRequest https://raw.githubusercontent.com/azzubair01/Bank_Statement_Digitization/main/train/dataset/generate_tf_records.py -OutFile media\\train\\dataset\\generate_tf_records.py')
+
+        subprocess.call("python " + os.path.join(os.getcwd(),
+                                                 'media\\train\\dataset\\generate_tf_records.py') + " -l " + os.path.join(
+            os.getcwd(), 'media\\train\\label_map.pbtxt') + " -o " + os.path.join(os.getcwd(),
+                                                                                  'media\\train\\dataset\\train.record') + " -i " + os.path.join(
+            os.getcwd(), 'media\\train\\dataset\\images\\train') + " -csv " + os.path.join(os.getcwd(),
+                                                                                           'media\\train\\dataset\\train_labels.csv'))
+        subprocess.call("python " + os.path.join(os.getcwd(),
+                                                 'media\\train\\dataset\\generate_tf_records.py') + " -l " + os.path.join(
+            os.getcwd(), 'media\\train\\label_map.pbtxt') + " -o " + os.path.join(os.getcwd(),
+                                                                                  'media\\train\\dataset\\val.record') + " -i " + os.path.join(
+            os.getcwd(), 'media\\train\\dataset\\images\\val') + " -csv " + os.path.join(os.getcwd(),
+                                                                                         'media\\train\\dataset\\val_labels.csv'))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 7. download_model.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Downloading Tensorflow model')
+        print('--------------------------------------------')
+
+        import os
+        import subprocess
+
+        # ---------------------------------------------------------------------------
+
+        model_name = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1')
+        if not os.path.exists(model_name):
+            subprocess.call(
+                'powershell -Command "Invoke-WebRequest http://download.tensorflow.org/models/object_detection/tf2/20200711/faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz -OutFile media\\train\\frcnn_v1.tar.gz"')
+
+        # ---------------------------------------------------------------------------
+
+        zipped_model = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1.tar.gz')
+        unzipped_model = os.path.join(os.getcwd(), 'media\\train\\')
+        if os.path.exists(zipped_model):
+            subprocess.call("powershell tar -xvzf " + zipped_model + " -C " + unzipped_model)
+
+        # ---------------------------------------------------------------------------
+
+        model_name = os.path.join(os.getcwd(), 'media\\train\\faster_rcnn_resnet50_v1_640x640_coco17_tpu-8')
+        renamed_model = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1')
+        if not os.path.exists(renamed_model):
+            os.rename(model_name, renamed_model)
+
+        # ---------------------------------------------------------------------------
+
+        model_name = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1.tar.gz')
+        if os.path.exists(model_name):
+            os.remove(model_name)
+
+        # ---------------------------------------------------------------------------
+
+        model_config = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1.config')
+        if not os.path.exists(model_config):
+            subprocess.call(
+                'powershell -Command "Invoke-WebRequest https://raw.githubusercontent.com/azzubair01/Bank_Statement_Digitization/main/train/frcnn_v1.config -OutFile media\\train\\frcnn_v1.config"')
+
+        model_tf = os.path.join(os.getcwd(), 'media\\train\\models')
+        if not os.path.exists(model_tf):
+            os.chdir('.\\media\\train')
+            subprocess.call('git clone https://github.com/tensorflow/models.git')
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 8. configure_settings.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Preparing input for model training')
+        print('--------------------------------------------')
+
+        num_classes = len(entity_names)
+        num_steps = 7500
+        batch_size = 1
+        checkpoint_type = 'detection'
+
+        train_record_path = 'media/train/dataset/train.record'
+        val_record_path = 'media/train/dataset/val.record'
+        model_dir = 'media/train/training'
+        labelmap_path = 'media/train/label_map.pbtxt'
+
+        pipeline_config_path = 'media/train/frcnn_v1.config'
+        fine_tune_checkpoint = 'media/train/frcnn_v1/checkpoint/ckpt-0'
+
+        config = """# Faster R-CNN with Resnet-50 (v1) with 640x640 input resolution
+        # Trained on COCO, initialized from Imagenet classification checkpoint
+        #
+        # Train on TPU-8
+        #
+        # Achieves 29.3 mAP on COCO17 Val
+
+        model {
+          faster_rcnn {
+            num_classes: """ + str(num_classes) + """
+            image_resizer {
+              keep_aspect_ratio_resizer {
+                min_dimension: 640
+                max_dimension: 640
+                pad_to_max_dimension: true
+              }
+            }
+            feature_extractor {
+              type: 'faster_rcnn_resnet50_keras'
+              batch_norm_trainable: true
+            }
+            first_stage_anchor_generator {
+              grid_anchor_generator {
+                scales: [0.25, 0.5, 1.0, 2.0]
+                aspect_ratios: [0.5, 1.0, 2.0]
+                height_stride: 16
+                width_stride: 16
+              }
+            }
+            first_stage_box_predictor_conv_hyperparams {
+              op: CONV
+              regularizer {
+                l2_regularizer {
+                  weight: 0.0
+                }
+              }
+              initializer {
+                truncated_normal_initializer {
+                  stddev: 0.01
+                }
+              }
+            }
+            first_stage_nms_score_threshold: 0.0
+            first_stage_nms_iou_threshold: 0.7
+            first_stage_max_proposals: 300
+            first_stage_localization_loss_weight: 2.0
+            first_stage_objectness_loss_weight: 1.0
+            initial_crop_size: 14
+            maxpool_kernel_size: 2
+            maxpool_stride: 2
+            second_stage_box_predictor {
+              mask_rcnn_box_predictor {
+                use_dropout: false
+                dropout_keep_probability: 1.0
+                fc_hyperparams {
+                  op: FC
+                  regularizer {
+                    l2_regularizer {
+                      weight: 0.0
+                    }
+                  }
+                  initializer {
+                    variance_scaling_initializer {
+                      factor: 1.0
+                      uniform: true
+                      mode: FAN_AVG
+                    }
+                  }
+                }
+                share_box_across_classes: true
+              }
+            }
+            second_stage_post_processing {
+              batch_non_max_suppression {
+                score_threshold: 0.0
+                iou_threshold: 0.6
+                max_detections_per_class: 100
+                max_total_detections: 300
+              }
+              score_converter: SOFTMAX
+            }
+            second_stage_localization_loss_weight: 2.0
+            second_stage_classification_loss_weight: 1.0
+            use_static_shapes: true
+            use_matmul_crop_and_resize: true
+            clip_anchors_to_image: true
+            use_static_balanced_label_sampler: true
+            use_matmul_gather_in_matcher: true
+          }
+        }
+
+        train_config: {
+          batch_size: """ + str(batch_size) + """
+          sync_replicas: true
+          startup_delay_steps: 0
+          replicas_to_aggregate: 8
+          num_steps: """ + str(num_steps) + """
+          optimizer {
+            momentum_optimizer: {
+              learning_rate: {
+                cosine_decay_learning_rate {
+                  learning_rate_base: .04
+                  total_steps: 25000
+                  warmup_learning_rate: .013333
+                  warmup_steps: 2000
+                }
+              }
+              momentum_optimizer_value: 0.9
+            }
+            use_moving_average: false
+          }
+          fine_tune_checkpoint_version: V2
+          fine_tune_checkpoint: '""" + fine_tune_checkpoint + """'
+          fine_tune_checkpoint_type: '""" + checkpoint_type + """'
+          data_augmentation_options {
+            random_horizontal_flip {
+            }
+          }
+
+          max_number_of_boxes: 100
+          unpad_groundtruth_tensors: false
+          use_bfloat16: true  # works only on TPUs
+        }
+
+        train_input_reader: {
+          label_map_path: '""" + str(labelmap_path) + """'
+          tf_record_input_reader {
+            input_path: '""" + str(train_record_path) + """'
+          }
+        }
+
+        eval_config: {
+          metrics_set: "coco_detection_metrics"
+          use_moving_averages: false
+          batch_size: 1;
+        }
+
+        eval_input_reader: {
+          label_map_path: '""" + str(labelmap_path) + """'
+          shuffle: false
+          num_epochs: 1
+          tf_record_input_reader {
+            input_path: '""" + str(val_record_path) + """'
+          }
+        }
+        """
+
+        with open(pipeline_config_path, 'w') as f:
+            f.write(config)
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 9. train.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Training Model')
+        print('--------------------------------------------')
+
+        import os
+
+        num_steps = 200
+        num_eval_steps = 200
+
+        model_dir = os.path.join(os.getcwd(), 'media\\train\\training\\')
+        pipeline_config_path = os.path.join(os.getcwd(), 'media\\train\\frcnn_v1.config')
+
+        import subprocess
+        import time
+        os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+        start_time = time.time()
+        subprocess.call(
+            "python media/train/models/research/object_detection/model_main_tf2.py --pipeline_config_path=" + f'{pipeline_config_path}' + \
+            " --model_dir=" + f'{model_dir}' + \
+            " --alsologtostderr --num_train_steps=" + f'{num_steps}' + \
+            " --sample_1_of_n_eval_examples=1 --num_eval_steps=" + f'{num_eval_steps}')
+        print("Model training requires %s hours " % ((time.time() - start_time) / 60 / 60))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # Script 12. export.py
+        # --------------------------------------------------------------------------------------------------------------
+
+        print('--------------------------------------------')
+        print('Exporting Model')
+        print('--------------------------------------------')
+
+        output_directory = os.path.join(os.getcwd(), 'media/train/maybank_model')
+        model_dir = os.path.join(os.getcwd(), 'media/train/training/')
+        pipeline_config_path = os.path.join(os.getcwd(), 'media/train/frcnn_v1.config')
+
+        subprocess.call("python media/train/models/research/object_detection/exporter_main_v2.py \
+            --trained_checkpoint_dir " + f'{model_dir}' + "\
+            --output_directory " + f'{output_directory}' + " \
+            --pipeline_config_path " + f'{pipeline_config_path}')
+
+        if not os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model')):
+            os.mkdir(os.path.join(os.getcwd(), 'media/train/maybank_model'))
+
+        subprocess.call(
+            "powershell Compress-Archive -LiteralPath media\\train\\maybank_model\\saved_model\\ -DestinationPath media\\train\\maybank_model.zip")
+
+        # --------------------------------------------------------------------------------------------------------------
+        # End of Python scripts
+        # --------------------------------------------------------------------------------------------------------------
 
         context = {"processed_image": "processed_image"}
         return context
@@ -172,7 +791,7 @@ class ResultView(TemplateView):
         if not os.path.exists(process_path):
             subprocess.call("powershell mkdir " + process_path)
 
-        for i, pdf in tqdm(enumerate(os.listdir(input_path1))):
+        for i, pdf in enumerate(os.listdir(input_path1)):
             file = pikepdf.open(input_path1 + pdf, allow_overwriting_input=True)
             file.save(input_path1 + pdf)
 
