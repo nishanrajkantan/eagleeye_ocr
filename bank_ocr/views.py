@@ -660,9 +660,17 @@ class TrainingView(TemplateView):
         if not os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model')):
             os.mkdir(os.path.join(os.getcwd(), 'media/train/maybank_model'))
 
-        subprocess.call(
-            "powershell Compress-Archive -LiteralPath media\\train\\maybank_model\\saved_model\\ -DestinationPath media\\train\\maybank_model.zip")
+        if os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model.zip')):
+            subprocess.call(
+                "powershell Compress-Archive -Update -LiteralPath media\\train\\maybank_model\\saved_model\\ -DestinationPath media\\train\\maybank_model.zip")
 
+        else:
+            subprocess.call(
+                "powershell Compress-Archive -LiteralPath media\\train\\maybank_model\\saved_model\\ -DestinationPath media\\train\\maybank_model.zip")
+
+        # --------------------------------------------------------------------------------------------------------------
+        # End of Python scripts
+        # --------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------
         # End of Python scripts
         # --------------------------------------------------------------------------------------------------------------
