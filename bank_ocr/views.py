@@ -1249,6 +1249,7 @@ class ResultView(TemplateView):
         if not os.path.exists(output_path):
             subprocess.call("powershell mkdir " + output_path)
 
+        index = 1
         for j in tqdm(range(len(file_list))):
 
             df_transaction = pd.read_excel(input_path + file_list[j], sheet_name='transactions')
@@ -1390,6 +1391,32 @@ class ResultView(TemplateView):
 
             df_new = pd.DataFrame({'SENDER': senders, 'RECEIVER': receivers})
             df_final = pd.concat([df_transaction, df_new], axis=1)
+            df_final.columns = ['TARIKH MASUK', 'BUTIR URUSNIAGA', 'JUMLAH URUSNIAGA', 'BAKI PENYATA', 'KREDIT',
+                                'DEBIT', 'PEMBERI', 'PENERIMA']
+
+            df_final['ID TRANSAKSI'] = ''
+
+            for i in range(len(df_final)):
+                df_final['ID TRANSAKSI'][i] = 'T00' + str(index)
+                index += 1
+                df_final['JUMLAH URUSNIAGA'][i] = re.sub('[+,-]', '', df_final['JUMLAH URUSNIAGA'][i])
+
+            df_final['TARIKH MASUK'] = pd.to_datetime(df_final['TARIKH MASUK'], infer_datetime_format=True)
+
+            df_final['JUMLAH URUSNIAGA'] = df_final['JUMLAH URUSNIAGA'].astype('float')
+
+            df_final['BAKI PENYATA'] = df_final['BAKI PENYATA'].astype('float')
+            df_final['KREDIT'] = df_final['KREDIT'].astype('float')
+            df_final['DEBIT'] = df_final['DEBIT'].astype('float')
+
+            df_final['PEMBERI'] = df_final['PEMBERI'].astype('str')
+            df_final['PENERIMA'] = df_final['PENERIMA'].astype('str')
+
+            df_final = df_final[
+                ['ID TRANSAKSI', 'TARIKH MASUK', 'BUTIR URUSNIAGA', 'JUMLAH URUSNIAGA', 'BAKI PENYATA', 'KREDIT',
+                 'DEBIT',
+                 'PEMBERI', 'PENERIMA']]
+
             # df_final.to_excel(output_path + 'output2_' + file_list[j][7:], index=False)
             df_final.to_csv(output_path + 'output2_' + file_list[j][7:-5] + '.csv', index=False)
 
