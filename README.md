@@ -25,6 +25,9 @@ Optical character recognition (OCR) is a subset of machine vision technology tha
   - Install poppler from here: https://blog.alivate.com.au/poppler-windows/
   - Add bin location to PATH
 
+### <b>f) Install Ghostscript</b>
+  - Install Ghostscript from here: [https://blog.alivate.com.au/poppler-windows/](https://www.ghostscript.com/releases/gsdnld.html)
+  
 ### <b>g) Copy protos from tensorflow directory to anaconda environment </b>
   - Copy all files from '..\models\research\object_detection\protos' to '..\anaconda3\envs\<env_name>\Lib\site-packages\object_detection\protos'
 
