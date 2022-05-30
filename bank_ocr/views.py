@@ -1915,6 +1915,15 @@ class ResultView(TemplateView):
                     "edgeType": "OneWay"
             }
 
+            #Link(Receiver to Transaction)
+            post_data = {
+                    "objectId": "e44cf9c4-1852-4f9e-8433-f2b84d9f0229",
+                    "name": " ",
+                    "fromObjectId":r_objectId,
+                    "toObjectId": t_objectId,
+                    "edgeType": "OneWay"
+            }
+
             r = requests.post(url = ObjectLinks_API_ENDPOINT, json = post_data)
             print("POST Transaction to Receiver " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
             # obj_id = r.text

@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&17ovp)mixwp5=qbht7@f&84u3d5i%f7$3ohqbhikf^4mxu-*q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1','110.159.105.26']
+ALLOWED_HOSTS = ['127.0.0.1','110.159.105.26','localhost']
 
 
 # Application definition
@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'ocr.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': str(os.path.join(BASE_DIR, "db.sqlite3")),
     }
 }
 
