@@ -45,7 +45,7 @@ class TrainingView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        obj = Post.objects.latest('id')
+        # obj = Post.objects.latest('id')
 
         # --------------------------------------------------------------------------------------------------------------
         # Script 1. preprocess_PDFs.py
@@ -652,14 +652,17 @@ class TrainingView(TemplateView):
         model_dir = os.path.join(os.getcwd(), 'media/train/training/')
         pipeline_config_path = os.path.join(os.getcwd(), 'media/train/frcnn_v1.config')
 
+        if not os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model')):
+            os.mkdir(os.path.join(os.getcwd(), 'media/train/maybank_model'))
+
         subprocess.call("python media/train/models/research/object_detection/exporter_main_v2.py \
             --trained_checkpoint_dir " + f'{model_dir}' + "\
             --output_directory " + f'{output_directory}' + " \
             --pipeline_config_path " + f'{pipeline_config_path}')
 
-        if not os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model')):
-            os.mkdir(os.path.join(os.getcwd(), 'media/train/maybank_model'))
-
+        if not os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model/saved_model/label_map.pbtxt')):
+            subprocess.call("powershell copy media\\train\\label_map.pbtxt media\\train\\maybank_model\\saved_model\\")
+            
         if os.path.exists(os.path.join(os.getcwd(), 'media/train/maybank_model.zip')):
             subprocess.call(
                 "powershell Compress-Archive -Update -LiteralPath media\\train\\maybank_model\\saved_model\\ -DestinationPath media\\train\\maybank_model.zip")
@@ -792,12 +795,12 @@ class ResultView(TemplateView):
         tf.keras.backend.clear_session()
         model = tf.saved_model.load(os.path.join(os.getcwd(),'bank_ocr\\maybank_model\\saved_model\\saved_model'))
 
-        process_path = os.path.join(os.getcwd(),'media\\prediction\\processing_images\\mayb\\')
+        process_path = os.path.join(os.getcwd(),'media\\prediction\\1. processing_images\\mayb\\')
         input_path1 = os.path.join(os.getcwd(),'media\\images\\')
         output_path = os.path.join(os.getcwd(),'media\\prediction\\predicted_coordinates_mayb.csv')
 
         if not os.path.exists(process_path):
-            subprocess.call("powershell mkdir " + process_path)
+            os.makedirs(process_path)
 
         for i, pdf in enumerate(os.listdir(input_path1)):
             file = pikepdf.open(input_path1 + pdf, allow_overwriting_input=True)
@@ -864,14 +867,14 @@ class ResultView(TemplateView):
         # cimb_files = sorted(os.listdir(input_path_cimb))
         mayb_files = sorted(os.listdir(input_path_mayb))
 
-        # output_path_cimb = os.path.join(os.getcwd(),'media\\transaction_output\\cimb\\')
-        output_path_mayb = os.path.join(os.getcwd(),'media\\prediction\\transaction_output\\mayb\\')
+        # output_path_cimb = os.path.join(os.getcwd(),'media\\prediction\\2. transaction_output\\cimb\\')
+        output_path_mayb = os.path.join(os.getcwd(),'media\\prediction\\2. transaction_output\\mayb\\')
 
         # if not os.path.exists(output_path_cimb):
         #     subprocess.call("powershell mkdir " + output_path_cimb)
 
         if not os.path.exists(output_path_mayb):
-            subprocess.call("powershell mkdir " + output_path_mayb)
+            os.makedirs(output_path_mayb)
 
         # for i, pdf in tqdm(enumerate(cimb_files)):
         #     file = pikepdf.open(input_path_cimb + pdf, allow_overwriting_input=True)
@@ -1159,19 +1162,19 @@ class ResultView(TemplateView):
         # --------------------------------------------------------------------------------------------------------------
 
         coordinates_df2 = pd.read_csv(os.path.join(os.getcwd(),'media\\prediction\\predicted_coordinates_mayb.csv'))
-        input_path2 = os.path.join(os.getcwd(),'media\\prediction\\processing_images\\mayb\\')
-        process_path2 = os.path.join(os.getcwd(),'media\\prediction\\cropped_images\\mayb\\')
-        output_path2 = os.path.join(os.getcwd(),'media\\prediction\\financial_output\\mayb\\')
-        excel_file_path2 = os.path.join(os.getcwd(),'media\\prediction\\transaction_output\\mayb\\')
+        input_path2 = os.path.join(os.getcwd(),'media\\prediction\\1. processing_images\\mayb\\')
+        process_path2 = os.path.join(os.getcwd(),'media\\prediction\\3. cropped_images\\mayb\\')
+        output_path2 = os.path.join(os.getcwd(),'media\\prediction\\4. financial_output\\mayb\\')
+        excel_file_path2 = os.path.join(os.getcwd(),'media\\prediction\\2. transaction_output\\mayb\\')
         excel_files2 = sorted(os.listdir(excel_file_path2))
 
         # --------------------------------------------------------------------------------------------------------------
 
         if not os.path.exists(process_path2):
-            subprocess.call("powershell mkdir " + process_path2)
+            os.makedirs(process_path2)
 
         if not os.path.exists(output_path2):
-            subprocess.call("powershell mkdir " + output_path2)
+            os.makedirs(output_path2)
 
         images2 = glob.glob1(input_path2, "*.jpg")
         tessdata_dir_config = r'-l "eng+msa" --tessdata-dir "C:\Program Files\Tesseract-OCR\tessdata" --psm 6'
@@ -1242,12 +1245,12 @@ class ResultView(TemplateView):
         import subprocess
         from tqdm import tqdm
 
-        input_path = os.path.join(os.getcwd(),'media\\prediction\\financial_output\\mayb\\')
+        input_path = os.path.join(os.getcwd(),'media\\prediction\\4. financial_output\\mayb\\')
         file_list = glob.glob1(input_path, "*.xlsx")
-        output_path = os.path.join(os.getcwd(),'media\\prediction\\extract_description\\raw_files\\')
+        output_path = os.path.join(os.getcwd(),'media\\prediction\\5. extract_description\\raw_files\\')
 
         if not os.path.exists(output_path):
-            subprocess.call("powershell mkdir " + output_path)
+            os.makedirs(output_path)
 
         df_final2 = pd.DataFrame()
 
@@ -1302,7 +1305,15 @@ class ResultView(TemplateView):
                                df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]) != None:
                     pattern1 = re.search('TRANSFER FROM A/C',
                                          df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
-                    pattern2 = re.search('[*]', df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
+                    pattern2 = re.search('[*]|TABUNG HAJI TRF|', df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
+
+                    if pattern2.span()[1] == 0:
+                        entity = 'TRANSFER TO MAE'
+
+                    else:
+                        description_text = df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]
+                        entity = description_text[pattern1.span()[1]:pattern2.span()[0]]
+
                     description_text = df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]
                     entity = description_text[pattern1.span()[1]:pattern2.span()[0]]
                     # entity = ''
@@ -1359,7 +1370,16 @@ class ResultView(TemplateView):
                                df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]) != None:
                     pattern1 = re.search('PYMT FROM A/C',
                                          df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
-                    pattern2 = re.search('[*]', df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
+                    pattern2 = re.search('[*]|', df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i])
+
+                    if pattern2.span()[1] == 0:
+                        entity = 'PAYMENT USING MAE'
+
+                    else:
+                        description_text = df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]
+                        entity = description_text[pattern1.span()[1]:pattern2.span()[0]]
+                    # entity = ''
+
                     description_text = df_transaction['BUTIR URUSNIAGA\n進支項說明\nTRANSACTION DESCRIPTION'][i]
                     entity = description_text[pattern1.span()[1]:pattern2.span()[0]]
                     # entity = ''
@@ -1399,7 +1419,7 @@ class ResultView(TemplateView):
             df_final['ID TRANSAKSI'] = ''
 
             for i in range(len(df_final)):
-                df_final['ID TRANSAKSI'][i] = 'T00' + str(index)
+                df_final['ID TRANSAKSI'][i] = 'T' + str(index).zfill(3)
                 index += 1
                 df_final['JUMLAH URUSNIAGA'][i] = re.sub('[+,-]', '', df_final['JUMLAH URUSNIAGA'][i])
 
@@ -1423,7 +1443,6 @@ class ResultView(TemplateView):
             # df_final.to_csv(output_path + 'output2_' + file_list[j][7:-5] + '.csv', index=False)
 
             df_final2 = df_final2.append(df_final, ignore_index=True)
-
         
 
 
@@ -1822,7 +1841,7 @@ class ResultView(TemplateView):
         import requests
 
 
-        for index, rows in df_final2.iterrows():
+        for index, rows in tqdm(df_final2.iterrows(), total=df_final2.shape[0]):
             #TRANSACTION
             Object_API_ENDPOINT = "http://localhost:9020/kbdata/Object"
 
@@ -1837,7 +1856,33 @@ class ResultView(TemplateView):
             print("POST TRANSACTION " + Object_API_ENDPOINT + " " +str(r.status_code))
             t_objectId = r.text
 
-            #TRANSACTION PROPERTY
+            #TRANSACTION PROPERTY (DATE)
+            ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
+
+            post_data = {
+                    "objectId": t_objectId,
+                    "name": "Date",
+                    "value": str(df_final2['TARIKH MASUK'][index])
+                    }
+
+            r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
+            print("POST TRANSACTION PROPERTY (DATE) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            # obj_id = r.text
+
+            #TRANSACTION PROPERTY (DESCRIPTION)
+            ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
+
+            post_data = {
+                    "objectId": t_objectId,
+                    "name": "Description",
+                    "value": str(df_final2['BUTIR URUSNIAGA'][index])
+                    }
+
+            r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
+            print("POST TRANSACTION PROPERTY (DESCRIPTION) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            # obj_id = r.text
+
+            #TRANSACTION PROPERTY (AMOUNT)
             ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
 
             post_data = {
@@ -1847,7 +1892,46 @@ class ResultView(TemplateView):
                     }
 
             r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
-            print("POST TRANSACTION PROPERTY " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            print("POST TRANSACTION PROPERTY (AMOUNT) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            # obj_id = r.text
+
+            #TRANSACTION PROPERTY (BALANCE)
+            ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
+
+            post_data = {
+                    "objectId": t_objectId,
+                    "name": "Balance",
+                    "value": str(df_final2['BAKI PENYATA'][index])
+                    }
+
+            r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
+            print("POST TRANSACTION PROPERTY (BALANCE) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            # obj_id = r.text
+
+            #TRANSACTION PROPERTY (CREDIT)
+            ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
+
+            post_data = {
+                    "objectId": t_objectId,
+                    "name": "Credit",
+                    "value": str(df_final2['KREDIT'][index])
+                    }
+
+            r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
+            print("POST TRANSACTION PROPERTY (CREDIT) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
+            # obj_id = r.text
+
+            #TRANSACTION PROPERTY (DEBIT)
+            ObjectProperty_API_ENDPOINT = "http://localhost:9020/kbdata/Object/"+ t_objectId +"/property"
+
+            post_data = {
+                    "objectId": t_objectId,
+                    "name": "Dedit",
+                    "value": str(df_final2['DEBIT'][index])
+                    }
+
+            r = requests.post(url = ObjectProperty_API_ENDPOINT, json = post_data)
+            print("POST TRANSACTION PROPERTY (DEBIT) " + ObjectProperty_API_ENDPOINT + " " +str(r.status_code))
             # obj_id = r.text
 
             #SENDER
@@ -1857,7 +1941,7 @@ class ResultView(TemplateView):
                     "name": df_final2['PEMBERI'][index],
                     "geoLocation": "",
                     "ontology": "Sender",
-                    "imageUrl": "https://p.kindpng.com/picc/s/269-2697881_computer-icons-user-clip-art-transparent-png-icon.png"
+                    "imageUrl": "https://cdn-icons-png.flaticon.com/256/3135/3135715.png"
             }
 
             r = requests.post(url = Object_API_ENDPOINT, json = post_data)
@@ -1871,19 +1955,19 @@ class ResultView(TemplateView):
                     "name": df_final2['PENERIMA'][index],
                     "geoLocation": "",
                     "ontology": "Receiver",
-                    "imageUrl": "https://www.acurata.de/fileadmin/_processed_/f/1/csm_User_03539ade6c.png"
+                    "imageUrl": "https://cdn-icons.flaticon.com/png/512/1144/premium/1144709.png?token=exp=1654061947~hmac=14ca94d32eecacd8ef4cca31f5a28541"
             }
 
             r = requests.post(url = Object_API_ENDPOINT, json = post_data)
             print("POST RECEIVER " + Object_API_ENDPOINT + " " +str(r.status_code))
             r_objectId = r.text
 
-            #Link(Sender to Transaction)
+            #Link (Sender to Transaction)
             ObjectLinks_API_ENDPOINT = "http://localhost:9020/kbdata/ObjectLinks"
 
             post_data = {
-                    "objectId": "e44cf9c4-1852-4f9e-8433-f2b84d9f0229",
-                    "name": " ",
+                    "objectId": "7faa3837-44d5-4de8-b481-7aff9e41a812",
+                    "name": "  ",
                     "fromObjectId":s_objectId,
                     "toObjectId": t_objectId,
                     "edgeType": "OneWay"
@@ -1892,11 +1976,11 @@ class ResultView(TemplateView):
             r = requests.post(url = ObjectLinks_API_ENDPOINT, json = post_data)
             print("POST Sender to Transaction " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
 
-            #Link(Transaction to Sender)
+            #Link (Transaction to Sender)
             ObjectLinks_API_ENDPOINT = "http://localhost:9020/kbdata/ObjectLinks"
 
             post_data = {
-                    "objectId": "45915cbc-791e-4ff5-bac2-c52e33913325",
+                    "objectId": "d6e1e62c-1c1c-43d4-aeba-8291388605e0",
                     "name": "sentBy",
                     "fromObjectId":t_objectId,
                     "toObjectId": s_objectId,
@@ -1906,18 +1990,21 @@ class ResultView(TemplateView):
             r = requests.post(url = ObjectLinks_API_ENDPOINT, json = post_data)
             print("POST Transaction to Sender " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
 
-            #Link(Transaction to Receiver)
+            #Link (Transaction to Receiver)
             post_data = {
-                    "objectId": "0ca2d105-954f-4ddf-b54d-709b19c8b603",
+                    "objectId": "0c4525dd-6150-41ba-9c97-76e84f907f98",
                     "name": "receivedBy",
                     "fromObjectId":t_objectId,
                     "toObjectId": r_objectId,
                     "edgeType": "OneWay"
             }
 
-            #Link(Receiver to Transaction)
+            r = requests.post(url = ObjectLinks_API_ENDPOINT, json = post_data)
+            print("POST Transaction to Receiver " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
+
+            #Link (Receiver to Transaction)
             post_data = {
-                    "objectId": "e44cf9c4-1852-4f9e-8433-f2b84d9f0229",
+                    "objectId": "6156d632-6a74-4828-9116-edf8195e08a5",
                     "name": " ",
                     "fromObjectId":r_objectId,
                     "toObjectId": t_objectId,
@@ -1925,7 +2012,7 @@ class ResultView(TemplateView):
             }
 
             r = requests.post(url = ObjectLinks_API_ENDPOINT, json = post_data)
-            print("POST Transaction to Receiver " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
+            print("POST Receiver to Transaction " + ObjectLinks_API_ENDPOINT + " " +str(r.status_code))
             # obj_id = r.text
 
             # --------------------------------------------------------------------------------------------------------------
