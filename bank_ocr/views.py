@@ -1955,7 +1955,7 @@ class ResultView(TemplateView):
                     "name": df_final2['PENERIMA'][index],
                     "geoLocation": "",
                     "ontology": "Receiver",
-                    "imageUrl": "https://cdn-icons.flaticon.com/png/512/1144/premium/1144709.png?token=exp=1654061947~hmac=14ca94d32eecacd8ef4cca31f5a28541"
+                    "imageUrl": "https://cdn-icons-png.flaticon.com/512/8090/8090406.png"
             }
 
             r = requests.post(url = Object_API_ENDPOINT, json = post_data)
@@ -1966,7 +1966,7 @@ class ResultView(TemplateView):
             ObjectLinks_API_ENDPOINT = "http://localhost:9020/kbdata/ObjectLinks"
 
             post_data = {
-                    "objectId": "7faa3837-44d5-4de8-b481-7aff9e41a812",
+                    "objectId": "66d799fc-cd1a-4cf5-90b0-5d8748212436",
                     "name": "  ",
                     "fromObjectId":s_objectId,
                     "toObjectId": t_objectId,
@@ -1980,7 +1980,7 @@ class ResultView(TemplateView):
             ObjectLinks_API_ENDPOINT = "http://localhost:9020/kbdata/ObjectLinks"
 
             post_data = {
-                    "objectId": "d6e1e62c-1c1c-43d4-aeba-8291388605e0",
+                    "objectId": "45edb68c-bf2b-4d2c-ac10-0583f6b27941",
                     "name": "sentBy",
                     "fromObjectId":t_objectId,
                     "toObjectId": s_objectId,
@@ -1992,7 +1992,7 @@ class ResultView(TemplateView):
 
             #Link (Transaction to Receiver)
             post_data = {
-                    "objectId": "0c4525dd-6150-41ba-9c97-76e84f907f98",
+                    "objectId": "6af5930e-ef93-413b-9e21-7c7b84e7ced3",
                     "name": "receivedBy",
                     "fromObjectId":t_objectId,
                     "toObjectId": r_objectId,
@@ -2004,7 +2004,7 @@ class ResultView(TemplateView):
 
             #Link (Receiver to Transaction)
             post_data = {
-                    "objectId": "6156d632-6a74-4828-9116-edf8195e08a5",
+                    "objectId": "30a6593e-34cf-4201-b5cb-da2837b16420",
                     "name": " ",
                     "fromObjectId":r_objectId,
                     "toObjectId": t_objectId,
